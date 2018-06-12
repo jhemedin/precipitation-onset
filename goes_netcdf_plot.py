@@ -31,8 +31,12 @@ proj_var = nc.variables[nc.variables['CMI_C13'].grid_mapping]
 globe = ccrs.Globe(ellipse='sphere', semimajor_axis=proj_var.semi_major_axis,
                    semiminor_axis=proj_var.semi_minor_axis)
 
-proj = ccrs.Geostationary(central_longitude=-75, 
+proj = ccrs.Geostationary(central_longitude=-75,
                           sweep_axis='x', satellite_height=35786023.0, globe = globe)
+
+
+#proj = ccrs.NearsidePerspective(central_longitude=-97.41666667, central_latitude=39.83333333,
+#                                satellite_height= 35786023.0, globe = globe)
 
 #proj = ccrs.LambertConformal(central_longitude=-75,
 #                             central_latitude=0,
@@ -49,13 +53,13 @@ fig = plt.figure(figsize=(15, 15))
 ax = fig.add_subplot(1, 1, 1, projection=proj)
 #ax = plt.axes(projection=ccrs.LambertConformal())
 #ax.set_extent([west, east, south, north])
-#ax.pcolormesh(x,y,z,zorder=1, transform=ccrs.Geostationary())
+ax.pcolormesh(x,y,z,zorder=1, transform=ccrs.Geostationary())
 ax.set_xlim(west,east)
 ax.set_ylim(south,north)
-#ax.add_feature(cfeature.STATES, linewidth=1, edgecolor='black',zorder=2)
-#ax.coastlines(resolution = '10m', linewidth=1, edgecolor='black',zorder=2)
-#ax.add_feature(cfeature.BORDERS, linewidth=1, edgecolor='black',zorder=2)
-ax.imshow(z, origin='upper', cmap='Greys', transform=ccrs.Geostationary())
+ax.add_feature(cfeature.STATES, linewidth=1, edgecolor='black',zorder=2)
+ax.coastlines(resolution = '10m', linewidth=1, edgecolor='black',zorder=2)
+ax.add_feature(cfeature.BORDERS, linewidth=1, edgecolor='black',zorder=2)
+#ax.imshow(z, origin='upper', cmap='Greys', transform=ccrs.Geostationary())
 plt.show()
 
 gc.collect()
