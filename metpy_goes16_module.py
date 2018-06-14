@@ -40,7 +40,7 @@ def plot_GOES16_channel(date, idx, channel, region):
 
     # Select the correct projection.
     
-#    print (proj_var.standard_parallel)
+    print (proj_var.standard_parallel)
     
 
     if proj_var.grid_mapping_name == 'lambert_conformal_conic':
@@ -93,7 +93,7 @@ channel_list = {u'1 - Blue Band 0.47 \u03BCm': 1,
             u'15 - Dirty Longwave Band 12.3 \u03BCm': 15,
             u'16 - CO2 Longwave IR 13.3 \u03BCm': 16}
 """
-channel_title = ['Blue Band 0.47 µm',
+channel_title = [ ,'Blue Band 0.47 µm',
             'Red Band 0.64 µm',
             'Veggie Band 0.86 µm',
             'Cirrus Band 1.37 µm',
@@ -117,5 +117,5 @@ channel_title = ['Blue Band 0.47 µm',
 chno = 13
     
 #plot_GOES16_channel( date=datetime.utcnow(), idx=-2, channel=chno, region='Mesoscale-1')
-#plot_GOES16_channel( date=datetime.utcnow(), idx=-2, channel=chno, region='Mesoscale-2')
-plot_GOES16_channel( date=datetime.utcnow(), idx=5, channel=chno, region='CONUS')
+plot_GOES16_channel( date=datetime.utcnow(), idx=-2, channel=chno, region='Mesoscale-2')
+#plot_GOES16_channel( date=datetime.utcnow(), idx=5, channel=chno, region='CONUS')

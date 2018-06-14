@@ -9,17 +9,19 @@ import gc
 from timeit import default_timer as timer
 start = timer()
 
-file = os.path.join(os.path.dirname(ccrs.__file__),'data', 'netcdf',
-    '/home/scarani/Desktop/OR_ABI-L2-MCMIPC-M3_G16_s20181591902335_e20181591905108_c20181591905239.nc')
-nc = netcdf_dataset(file)
+file = '/home/scarani/Downloads/OR_ABI-L2-MCMIPM2-M3_G16_s20181642040593_e20181642041050_c20181642041118.nc'
+#file = '/home/scarani/Desktop/OR_ABI-L2-MCMIPF-M3_G16_s20181630045394_e20181630056161_c20181630056244.nc'
+
+filename = os.path.join(os.path.dirname(ccrs.__file__),'data', 'netcdf', file)
+nc = netcdf_dataset(filename)
 
 
 earth_cir = 40074274.9
-x = nc.variables['x'][:]
-y = nc.variables['y'][:]
-#x = ((nc.variables['x'][:])/(2*np.pi))*earth_cir #radians to meters
-#y = ((nc.variables['y'][:])/(2*np.pi))*earth_cir #radians to meters
-z = nc.variables['CMI_C13'][:].data 
+x_old = nc.variables['x'][:]
+y_old = nc.variables['y'][:]
+x_ = ((nc.variables['x'][:].data)/(2*np.pi))*earth_cir #radians to meters
+y_ = ((nc.variables['y'][:].data)/(2*np.pi))*earth_cir #radians to meters
+c = nc.variables['CMI_C13'][:]
 data1 = nc.variables['CMI_C13']
 sat = nc.variables
 satvar = nc.variables.keys()
@@ -43,24 +45,31 @@ proj = ccrs.Geostationary(central_longitude=-75,
 #                             globe=globe)
 
 
-north = proj.y_limits[1]
-south = proj.y_limits[0]
-east = proj.x_limits[1]
-west = proj.x_limits[0]
+north = y_old.max()
+south = y_old.min()
+east = x_old.max()
+west = x_old.min()
 
 
+#north = proj.y_limits[1]
+#south = proj.y_limits[0]
+#east = proj.x_limits[1]
+#west = proj.x_limits[0]
+
+x, y = np.meshgrid(x_old, y_old)
 fig = plt.figure(figsize=(15, 15))
 ax = fig.add_subplot(1, 1, 1, projection=proj)
-#ax = plt.axes(projection=ccrs.LambertConformal())
-#ax.set_extent([west, east, south, north])
-ax.pcolormesh(x,y,z,zorder=1, transform=ccrs.Geostationary())
-ax.set_xlim(west,east)
-ax.set_ylim(south,north)
-ax.add_feature(cfeature.STATES, linewidth=1, edgecolor='black',zorder=2)
-ax.coastlines(resolution = '10m', linewidth=1, edgecolor='black',zorder=2)
-ax.add_feature(cfeature.BORDERS, linewidth=1, edgecolor='black',zorder=2)
-#ax.imshow(z, origin='upper', cmap='Greys', transform=ccrs.Geostationary())
+#ax = fig.add_subplot(1, 1, 1, projection=ccrs.LambertConformal())
+#ax = plt.axes(projection=proj)
+#ax.set_xlim(west,east)
+#ax.set_ylim(south,north)
+
+ax.pcolormesh(x,y,c, cmap='Greys')
+#ax.add_feature(cfeature.STATES, linewidth=1, edgecolor='black')
+#ax.coastlines(resolution = '10m', linewidth=10, edgecolor='black')
+#ax.add_feature(cfeature.BORDERS, linewidth=1, edgecolor='black')
 plt.show()
+plt.close()
 
 gc.collect()
 end = timer()
