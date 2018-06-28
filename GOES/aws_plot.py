@@ -1,3 +1,4 @@
+from boto.s3.connection import S3Connection
 import os
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -9,7 +10,7 @@ from timeit import default_timer as timer
 from datetime import date, datetime, timedelta
 start = timer()
 
-file = '/home/scarani/Desktop/001/OR_ABI-L1b-RadM2-M3C02_G16_s20181721316034_e20181721316091_c20181721316121.nc'
+file = '/home/scarani/Desktop/data.nc'
 
 filename = os.path.join(os.path.dirname(ccrs.__file__),'data', 'netcdf', file)
 nc = netcdf_dataset(filename)
@@ -19,12 +20,12 @@ sat_height = nc.variables['goes_imager_projection'].perspective_point_height
 
 x = nc.variables['x'][:].data * sat_height
 y = nc.variables['y'][:].data * sat_height
-c = nc.variables['Rad'][:]
-data = nc.variables['Rad']
+c = nc.variables['CMI_C13'][:]
+data = nc.variables['CMI_C13']
 satvar = nc.variables.keys()
 time = nc['t']
 
-proj_var = nc.variables[nc.variables['Rad'].grid_mapping]
+proj_var = nc.variables[nc.variables['CMI_C13'].grid_mapping]
 
 globe = ccrs.Globe(ellipse='sphere', semimajor_axis=proj_var.semi_major_axis,
                    semiminor_axis=proj_var.semi_minor_axis)
@@ -45,9 +46,9 @@ ax = fig.add_subplot(1, 1, 1, projection=proj)
 ax.set_xlim(west,east)
 ax.set_ylim(south,north)
 
-vmin = 15
-vmax = 510
-colormap = 'Greys_r'
+vmin = 198
+vmax = 325
+colormap = 'Greys'
 
 im = ax.pcolormesh(x,y,c, cmap=colormap, vmin=vmin, vmax=vmax)
 ax.add_feature(cfeature.STATES, linewidth=2, edgecolor='black')
