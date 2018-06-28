@@ -13,7 +13,7 @@ def _nearestDate(dates, pivot):
     return min(dates, key=lambda x: abs(x - pivot))
 
 
-def get_radar_from_aws(site, s_d, e_d):
+def get_radar_from_aws(site, datetime_t):
     """
     Get the closest volume of NEXRAD data to a particular datetime.
     Parameters
@@ -31,8 +31,7 @@ def get_radar_from_aws(site, s_d, e_d):
     #First create the query string for the bucket knowing
     #how NOAA and AWS store the data
 
-    start_file = s_d.strftime('%Y/%m/%d/') + site
-    end_file = e_d.strftime('%Y/%m/%d/') + site
+    my_pref = datetime_t.strftime('%Y/%m/%d/') + site
 
     #Connect to the bucket
 
@@ -41,58 +40,35 @@ def get_radar_from_aws(site, s_d, e_d):
 
     #Get a list of files
 
-    start_list = list(bucket.list(prefix = start_file))
-    end_list = list(bucket.list(prefix = end_file))
+    bucket_list = list(bucket.list(prefix = my_pref))
 
     #we are going to create a list of keys and datetimes to allow easy searching
 
-    startkeys = []
-    startdatetimes = []
-    endkeys = []
-    enddatetimes = []
+    keys = []
+    datetimes = []
 
     #populate the list
 
-    for i in range(len(start_list)):
-        this_str = str(start_list[i].key)
-        print(this_str)
+    for i in range(len(bucket_list)):
+        this_str = str(bucket_list[i].key)
         if 'gz' in this_str:
             endme = this_str[-22:-4]
             fmt = '%Y%m%d_%H%M%S_V0'
-            dt1 = datetime.strptime(endme, fmt)
-            startdatetimes.append(dt1)
-            startkeys.append(start_list[i])
+            dt = datetime.strptime(endme, fmt)
+            datetimes.append(dt)
+            keys.append(bucket_list[i])
 
         if this_str[-3::] == 'V06':
             endme = this_str[-19::]
             fmt = '%Y%m%d_%H%M%S_V06'
-            dt1 = datetime.strptime(endme, fmt)
-            startdatetimes.append(dt1)
-            startkeys.append(start_list[i])
-            
-    for i in range(len(end_list)):
-        this_str = str(end_list[i].key)
-        print(this_str)
-        if 'gz' in this_str:
-            endme = this_str[-22:-4]
-            fmt = '%Y%m%d_%H%M%S_V0'
-            dt2 = datetime.strptime(endme, fmt)
-            enddatetimes.append(dt2)
-            endkeys.append(end_list[i])
-
-        if this_str[-3::] == 'V06':
-            endme = this_str[-19::]
-            fmt = '%Y%m%d_%H%M%S_V06'
-            dt2 = datetime.strptime(endme, fmt)
-            enddatetimes.append(dt2)
-            endkeys.append(end_list[i])
+            dt = datetime.strptime(endme, fmt)
+            datetimes.append(dt)
+            keys.append(bucket_list[i])
 
     #find the closest available radar to your datetime
 
-    closest_startdatetime = _nearestDate(startdatetimes, s_d)
-    closest_enddatetime = _nearestDate(enddatetimes, e_d)
-    start_index = datetimes.index(closest_startdatetime)
-    end_index = datetimes.index(closest_enddatetime)
+    closest_datetime = _nearestDate(datetimes, datetime_t)
+    index = datetimes.index(closest_datetime)
 
     localfile = tempfile.NamedTemporaryFile()
     keys[index].get_contents_to_filename(localfile.name)
@@ -102,13 +78,11 @@ def get_radar_from_aws(site, s_d, e_d):
     #my_radar.metadata['vcp_pattern']
     return radar
 
-start_date = "20150519_180000"
-end_date = "20150520_190000"
+base_date = "20150520_190000"
 fmt = '%Y%m%d_%H%M%S' 
-s_d = datetime.strptime(start_date, fmt)
-e_d = datetime.strptime(end_date, fmt)
+b_d = datetime.strptime(base_date, fmt)
 
-my_radar = get_radar_from_aws('KHGX',s_d, e_d)
+my_radar = get_radar_from_aws('KHGX',b_d )
 nyq = my_radar.instrument_parameters['nyquist_velocity']['data'].max()
 #print ("VCP: %s"%my_radar.metadata['vcp_pattern'])
 #print ("NYQ: %s"%nyq)
@@ -138,62 +112,61 @@ proj = cartopy.crs.Mercator(
 
 saveloc = '/home/scarani/Desktop/output/'
 
-def plt_radar():
-    #Plot Relfectivity
-    fig = plt.figure(figsize = [20,8])
-    display.plot_ppi_map('reflectivity', sweep = 0, projection=proj, resolution = '10m',
-                         vmin = -8, vmax = 64, mask_outside = False,
-                         cmap = pyart.graph.cm.NWSRef,
-                         min_lat = min_lat, min_lon = min_lon,
-                         max_lat = max_lat, max_lon = max_lon,
-                         lat_lines = lal, lon_lines = lol)
-    gl = display.ax.gridlines(draw_labels=True,
-                              linewidth=2, color='gray', alpha=0.5, linestyle='--')
-    gl.xlabels_top = False
-    gl.ylabels_right = False
-    plt.title('Reflectivity: ' + my_radar.time['units'].split()[2])
-    plt.savefig(saveloc + my_radar.time['units'].split()[2] +'.png', bbox_inches = 'tight')
-    """
-    #Plot Correlation Coefficient
-    fig = plt.figure(figsize = [20,8])
-    display.plot_ppi_map('cross_correlation_ratio', sweep = 0, projection=proj, resolution = '10m',
-                         vmin = .8, vmax = 1, mask_outside = False,
-                         cmap = pyart.graph.cm.RefDiff,
-                         min_lat = min_lat, min_lon = min_lon,
-                         max_lat = max_lat, max_lon = max_lon,
-                         lat_lines = lal, lon_lines = lol)
-    gl = display.ax.gridlines(draw_labels=True,
-                              linewidth=2, color='gray', alpha=0.5, linestyle='--')
-    gl.xlabels_top = False
-    gl.ylabels_right = False
-    plt.savefig('/home/scarani/Desktop/Output/correlation_coefficent.png', bbox_inches = 'tight')
-    
-    #Plot Differential Reflectivity
-    fig = plt.figure(figsize = [20,8])
-    display.plot_ppi_map('differential_reflectivity', sweep = 0, projection=proj, resolution = '10m',
-                         vmin = -1, vmax = 4, mask_outside = False,
-                         cmap = pyart.graph.cm.RefDiff,
-                         min_lat = min_lat, min_lon = min_lon,
-                         max_lat = max_lat, max_lon = max_lon,
-                         lat_lines = lal, lon_lines = lol)
-    gl = display.ax.gridlines(draw_labels=True,
-                              linewidth=2, color='gray', alpha=0.5, linestyle='--')
-    gl.xlabels_top = False
-    gl.ylabels_right = False
-    plt.title('Differential Reflectivity: ' + my_radar.time['units'].split()[2])
-    plt.savefig('/home/scarani/Desktop/Output/differential_reflectivity.png', bbox_inches = 'tight')
-    
-    #Plot Velocity
-    fig = plt.figure(figsize = [20,8])
-    display.plot_ppi_map('velocity', sweep = 1, projection=proj, resolution = '10m',
-                         vmin = -nyq*1.5, vmax = nyq*1.5, mask_outside = False,
-                         cmap = pyart.graph.cm.NWSVel,
-                         min_lat = min_lat, min_lon = min_lon,
-                         max_lat = max_lat, max_lon = max_lon,
-                         lat_lines = lal, lon_lines = lol)
-    gl = display.ax.gridlines(draw_labels=True,
-                              linewidth=2, color='gray', alpha=0.5, linestyle='--')
-    gl.xlabels_top = False
-    gl.ylabels_right = False
-    plt.savefig('/home/scarani/Desktop/Output/velocity.png', bbox_inches = 'tight')
-    """
+#Plot Relfectivity
+fig = plt.figure(figsize = [20,8])
+display.plot_ppi_map('reflectivity', sweep = 0, projection=proj, resolution = '10m',
+                     vmin = -8, vmax = 64, mask_outside = False,
+                     cmap = pyart.graph.cm.NWSRef,
+                     min_lat = min_lat, min_lon = min_lon,
+                     max_lat = max_lat, max_lon = max_lon,
+                     lat_lines = lal, lon_lines = lol)
+gl = display.ax.gridlines(draw_labels=True,
+                          linewidth=2, color='gray', alpha=0.5, linestyle='--')
+gl.xlabels_top = False
+gl.ylabels_right = False
+plt.title('Reflectivity: ' + my_radar.time['units'].split()[2])
+plt.savefig(saveloc + my_radar.time['units'].split()[2] +'.png', bbox_inches = 'tight')
+"""
+#Plot Correlation Coefficient
+fig = plt.figure(figsize = [20,8])
+display.plot_ppi_map('cross_correlation_ratio', sweep = 0, projection=proj, resolution = '10m',
+                     vmin = .8, vmax = 1, mask_outside = False,
+                     cmap = pyart.graph.cm.RefDiff,
+                     min_lat = min_lat, min_lon = min_lon,
+                     max_lat = max_lat, max_lon = max_lon,
+                     lat_lines = lal, lon_lines = lol)
+gl = display.ax.gridlines(draw_labels=True,
+                          linewidth=2, color='gray', alpha=0.5, linestyle='--')
+gl.xlabels_top = False
+gl.ylabels_right = False
+plt.savefig('/home/scarani/Desktop/Output/correlation_coefficent.png', bbox_inches = 'tight')
+
+#Plot Differential Reflectivity
+fig = plt.figure(figsize = [20,8])
+display.plot_ppi_map('differential_reflectivity', sweep = 0, projection=proj, resolution = '10m',
+                     vmin = -1, vmax = 4, mask_outside = False,
+                     cmap = pyart.graph.cm.RefDiff,
+                     min_lat = min_lat, min_lon = min_lon,
+                     max_lat = max_lat, max_lon = max_lon,
+                     lat_lines = lal, lon_lines = lol)
+gl = display.ax.gridlines(draw_labels=True,
+                          linewidth=2, color='gray', alpha=0.5, linestyle='--')
+gl.xlabels_top = False
+gl.ylabels_right = False
+plt.title('Differential Reflectivity: ' + my_radar.time['units'].split()[2])
+plt.savefig('/home/scarani/Desktop/Output/differential_reflectivity.png', bbox_inches = 'tight')
+
+#Plot Velocity
+fig = plt.figure(figsize = [20,8])
+display.plot_ppi_map('velocity', sweep = 1, projection=proj, resolution = '10m',
+                     vmin = -nyq*1.5, vmax = nyq*1.5, mask_outside = False,
+                     cmap = pyart.graph.cm.NWSVel,
+                     min_lat = min_lat, min_lon = min_lon,
+                     max_lat = max_lat, max_lon = max_lon,
+                     lat_lines = lal, lon_lines = lol)
+gl = display.ax.gridlines(draw_labels=True,
+                          linewidth=2, color='gray', alpha=0.5, linestyle='--')
+gl.xlabels_top = False
+gl.ylabels_right = False
+plt.savefig('/home/scarani/Desktop/Output/velocity.png', bbox_inches = 'tight')
+"""

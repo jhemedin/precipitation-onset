@@ -25,6 +25,7 @@ from matplotlib import animation
 import tempfile
 import numpy as np
 import pandas as pd
+import cartopy
 
 # Function for pulling all keys between two dates at a chosen nexrad site.
 def nexrad_site_datespan(start_date=None, start_date_time=None,
@@ -108,16 +109,6 @@ def nexrad_site_datespan(start_date=None, start_date_time=None,
     data_keys = selected_keys['keys'].tolist()
     return data_keys
 
-
-# Conversion of keys to pyart radar objects.
-def radar_keys_to_data(keys):
-    localfile = tempfile.NamedTemporaryFile()
-    keys.get_contents_to_filename(localfile.name)
-    # Only pulling two scans for the sake of time and memory.
-    radar = pyart.io.read_nexrad_archive(localfile.name, scans=[0, 1])
-    return radar
-
-
 def datespan(start_date, end_date, delta=timedelta(days=1)):
     current_date = start_date
     while current_date < end_date:
@@ -128,29 +119,60 @@ def datespan(start_date, end_date, delta=timedelta(days=1)):
 # Plotting and creating an animation using the radar datas.
 # Something close to home.
 # Use the option of saying 'now' to retrieve current UTC.
-my_data_keys_klot = nexrad_site_datespan(start_date='20161019',
-                                         start_date_time='125000',
-                                         end_date='20161019',
-                                         end_date_time='160000',
-                                         site='klot')
+my_data_keys = nexrad_site_datespan(start_date='20180621',
+                                         start_date_time='090000',
+                                         end_date='20180621',
+                                         end_date_time='190000',
+                                         site='khgx')
 
 # Showing that the nexrad_site_datespan
 # function correctly retrieved all keys between each date.
-print(my_data_keys_klot)
+print(my_data_keys)
 
-# Creating a gif of sweep 0 for radar data between both dates.
-def animate(nframe):
-    plt.clf()
-    radar = radar_keys_to_data(my_data_keys_klot[nframe])
-    display = pyart.graph.RadarMapDisplay(radar)
-    display.plot_ppi_map('reflectivity', sweep=0, resolution='l',
-                         vmin=-8, vmax=64, mask_outside=False,
-                         cmap=pyart.graph.cm.NWSRef,
-                         lat_lines=None, lon_lines=None)
-    display.basemap.drawcounties()
 
-fig = plt.figure(figsize=(10, 8))
-anim_klot = animation.FuncAnimation(fig, animate,
-                                    frames=len(my_data_keys_klot))
-anim_klot.save('klot_reflectivity_animation.gif', writer='imagemagick', fps=5)
-plt.close()
+for key in my_data_keys:
+    localfile = tempfile.NamedTemporaryFile()
+    key.get_contents_to_filename(localfile.name)
+    
+    radar = pyart.io.read(localfile.name)
+    
+    
+    #Plot Bounds
+    centerx = -95.3632700
+    centery = 29.4718835
+    zoom = 1.5
+    
+    xm = 25/18
+    min_lon = centerx - (zoom*xm)
+    min_lat = centery - zoom
+    max_lon = centerx + (zoom*xm)
+    max_lat = centery + zoom
+    
+    lal = np.arange(min_lat, max_lat, .5)
+    lol = np.arange(min_lon, max_lon, .5)
+    
+    
+    display = pyart.graph.RadarMapDisplayCartopy(radar)
+    lat_0 = display.loc[0]
+    lon_0 = display.loc[1]
+    proj = cartopy.crs.Mercator(
+                    central_longitude=lon_0,
+                    min_latitude=min_lat, max_latitude=max_lat)
+    
+    saveloc = '/home/scarani/Desktop/output/radar/'
+    
+    #Plot Relfectivity
+    fig = plt.figure(figsize = [20,8])
+    display.plot_ppi_map('reflectivity', sweep = 0, projection=proj, resolution = '10m',
+                         vmin = -8, vmax = 64, mask_outside = False,
+                         cmap = pyart.graph.cm.NWSRef,
+                         min_lat = min_lat, min_lon = min_lon,
+                         max_lat = max_lat, max_lon = max_lon,
+                         lat_lines = lal, lon_lines = lol)
+#    gl = display.ax.gridlines(draw_labels=True,
+#                              linewidth=2, color='gray', alpha=0.5, linestyle='--')
+    plt.savefig(saveloc + radar.time['units'].split()[2] +'.png', bbox_inches = 'tight')
+    plt.close()
+    del radar
+    
+    print(radar.fixed_angle['data'])
