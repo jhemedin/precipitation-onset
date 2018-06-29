@@ -4,13 +4,16 @@ Py-ART Animation
 Choosing the radar volume from a Nexrad site over a time span.
 
 Based on code by Scott Collis:
-https://github.com/scollis/radar_in_the_cloud/blob/master/notebooks/Matthew.ipynb
+github.com/scollis/radar_in_the_cloud/blob/master/notebooks/Matthew.ipynb
 
 Jonathan Helmus:
-https://anaconda.org/jjhelmus/scipy2015_openaccessradar_jjh/notebook
+anaconda.org/jjhelmus/scipy2015_openaccessradar_jjh/notebook
 
-and memory fixes by Robert Jackson:
-https://github.com/rcjackson/pyart_practice/blob/master/nexrad_animatedgif.py
+memory fixes by Robert Jackson:
+github.com/rcjackson/pyart_practice/blob/master/nexrad_animatedgif.py
+
+and Zach Sherman helped designing the code:
+github.com/zssherman/pyart_animation/blob/master/examples/pyart_animation_example.py
 
 Note: NEXRAD s3 files are set in UTC.
 
@@ -119,11 +122,11 @@ def datespan(start_date, end_date, delta=timedelta(days=1)):
 # Plotting and creating an animation using the radar datas.
 # Something close to home.
 # Use the option of saying 'now' to retrieve current UTC.
-my_data_keys = nexrad_site_datespan(start_date='20180621',
-                                         start_date_time='090000',
-                                         end_date='20180621',
-                                         end_date_time='190000',
-                                         site='khgx')
+my_data_keys = nexrad_site_datespan(start_date='20180524',
+                                         start_date_time='190600',
+                                         end_date='20180524',
+                                         end_date_time='234000',
+                                         site='kvnx')
 
 # Showing that the nexrad_site_datespan
 # function correctly retrieved all keys between each date.
@@ -136,10 +139,19 @@ for key in my_data_keys:
     
     radar = pyart.io.read(localfile.name)
     
+    nyq = radar.instrument_parameters['nyquist_velocity']['data'].max()
+    
+    sitename = str(key)[36:40]
+    
+    # Define sweep angle here
+    sweep = 0
+    angle = round(radar.fixed_angle['data'][sweep],1)
+    vcp = radar.metadata['vcp_pattern']
+    
     
     #Plot Bounds
-    centerx = -95.3632700
-    centery = 29.4718835
+    centerx = -97.53662
+    centery = 36.65189
     zoom = 1.5
     
     xm = 25/18
@@ -161,18 +173,70 @@ for key in my_data_keys:
     
     saveloc = '/home/scarani/Desktop/output/radar/'
     
-    #Plot Relfectivity
     fig = plt.figure(figsize = [20,8])
-    display.plot_ppi_map('reflectivity', sweep = 0, projection=proj, resolution = '10m',
+    display.plot_ppi_map('reflectivity', sweep = sweep, projection=proj, resolution = '10m',
                          vmin = -8, vmax = 64, mask_outside = False,
                          cmap = pyart.graph.cm.NWSRef,
                          min_lat = min_lat, min_lon = min_lon,
                          max_lat = max_lat, max_lon = max_lon,
                          lat_lines = lal, lon_lines = lol)
-#    gl = display.ax.gridlines(draw_labels=True,
-#                              linewidth=2, color='gray', alpha=0.5, linestyle='--')
-    plt.savefig(saveloc + radar.time['units'].split()[2] +'.png', bbox_inches = 'tight')
-    plt.close()
-    del radar
+    gl = display.ax.gridlines(draw_labels=True,
+                              linewidth=2, color='gray', alpha=0.5, linestyle='--')
+    gl.xlabels_top = False
+    gl.ylabels_right = False
+    plt.title(sitename + ': Reflectivity (' + str(angle) + '°)' + '\n VCP: ' 
+              + str(vcp) + '\n' + str(radar.time['units'].split()[2]))
+    plt.savefig(saveloc + 'ref_' + radar.time['units'].split()[2] +'.png', 
+                bbox_inches = 'tight', dpi = 300)
+
+    #Plot Correlation Coefficient
+    fig = plt.figure(figsize = [20,8])
+    display.plot_ppi_map('cross_correlation_ratio', sweep = sweep, projection=proj, resolution = '10m',
+                         vmin = .8, vmax = 1, mask_outside = False,
+                         cmap = pyart.graph.cm.RefDiff,
+                         min_lat = min_lat, min_lon = min_lon,
+                         max_lat = max_lat, max_lon = max_lon,
+                         lat_lines = lal, lon_lines = lol)
+    gl = display.ax.gridlines(draw_labels=True,
+                              linewidth=2, color='gray', alpha=0.5, linestyle='--')
+    gl.xlabels_top = False
+    gl.ylabels_right = False
+    plt.title('Differential Reflectivity: ' + radar.time['units'].split()[2])
+    plt.title(sitename + ': Correlation Coefficient (' + str(angle) + '°)' + '\n VCP: ' 
+              + str(vcp) + '\n' + str(radar.time['units'].split()[2]))
+    plt.savefig(saveloc + 'cc_' + radar.time['units'].split()[2] +'.png', 
+                bbox_inches = 'tight', dpi = 300)
     
-    print(radar.fixed_angle['data'])
+    #Plot Differential Reflectivity
+    fig = plt.figure(figsize = [20,8])
+    display.plot_ppi_map('differential_reflectivity', sweep = sweep, projection=proj, resolution = '10m',
+                         vmin = -1, vmax = 4, mask_outside = False,
+                         cmap = pyart.graph.cm.RefDiff,
+                         min_lat = min_lat, min_lon = min_lon,
+                         max_lat = max_lat, max_lon = max_lon,
+                         lat_lines = lal, lon_lines = lol)
+    gl = display.ax.gridlines(draw_labels=True,
+                              linewidth=2, color='gray', alpha=0.5, linestyle='--')
+    gl.xlabels_top = False
+    gl.ylabels_right = False
+    plt.title(sitename + ': Differential Reflectivity (' + str(angle) + '°)' + '\n VCP: ' 
+              + str(vcp) + '\n' + str(radar.time['units'].split()[2]))
+    plt.savefig(saveloc + 'dref_' + radar.time['units'].split()[2] +'.png', 
+                bbox_inches = 'tight', dpi = 300)
+    
+    #Plot Velocity
+    fig = plt.figure(figsize = [20,8])
+    display.plot_ppi_map('velocity', sweep = (sweep+1), projection=proj, resolution = '10m',
+                         vmin = -nyq*1.5, vmax = nyq*1.5, mask_outside = False,
+                         cmap = pyart.graph.cm.NWSVel,
+                         min_lat = min_lat, min_lon = min_lon,
+                         max_lat = max_lat, max_lon = max_lon,
+                         lat_lines = lal, lon_lines = lol)
+    gl = display.ax.gridlines(draw_labels=True,
+                              linewidth=2, color='gray', alpha=0.5, linestyle='--')
+    gl.xlabels_top = False
+    gl.ylabels_right = False
+    plt.title(sitename + ': Velocity (' + str(angle) + '°)' + '\n VCP: ' 
+              + str(vcp) + '\n' + str(radar.time['units'].split()[2]))
+    plt.savefig(saveloc + 'v_' + radar.time['units'].split()[2] +'.png', 
+                bbox_inches = 'tight', dpi = 300)
