@@ -1,4 +1,4 @@
-import os
+ import os
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
@@ -7,39 +7,45 @@ import numpy as np
 import gc
 from timeit import default_timer as timer
 from datetime import date, datetime, timedelta
+from metpy.plots import colortables
+import matplotlib.colors as mcolors
+import pyart
+
 start = timer()
 
 filelist = sorted(os.listdir('/home/scarani/Desktop/data/goes/001/'))
-channel = 2
+channel = 13
 
 
 
-for i in range(1200,1501,1):
-    
-    print(i)
-    
+for i in range(0,len(filelist)+1,1):
+        
     file = str('/home/scarani/Desktop/data/goes/001/' + filelist[i])
+    
+    print(file)
     
     filename = os.path.join(os.path.dirname(ccrs.__file__),'data', 'netcdf', file)
     nc = netcdf_dataset(filename)
     
     sat_height = nc.variables['goes_imager_projection'].perspective_point_height
-    
-    
+
+
     x = nc.variables['x'][:].data * sat_height
     y = nc.variables['y'][:].data * sat_height
-    c = nc.variables['Rad'][:]
-    data = nc.variables['Rad']
+    c = nc.variables['CMI_C13'][:]
+    data = nc.variables['CMI_C13']
     satvar = nc.variables.keys()
     time = nc['t']
     
-    proj_var = nc.variables[nc.variables['Rad'].grid_mapping]
+    proj_var = nc.variables[data.grid_mapping]
     
     globe = ccrs.Globe(ellipse='sphere', semimajor_axis=proj_var.semi_major_axis,
                        semiminor_axis=proj_var.semi_minor_axis)
     
     proj = ccrs.Geostationary(central_longitude=-75,
                               sweep_axis='x', satellite_height=sat_height, globe = globe)
+    
+    trans = ccrs.Miller(central_longitude=-75)
     
     
     north = y.max()
@@ -50,15 +56,28 @@ for i in range(1200,1501,1):
     
     x, y = np.meshgrid(x, y)
     fig = plt.figure(figsize=(15, 15))
-    ax = fig.add_subplot(1, 1, 1, projection=proj)
-    ax.set_xlim(west,east)
-    ax.set_ylim(south,north)
+    ax = fig.add_subplot(1, 1, 1, projection=trans)
+    #ax.set_xlim(west,east)
+    #ax.set_ylim(south,north)
     
-    vmin = 15
-    vmax = 580
-    colormap = 'Greys_r'
+    vmin = 198
+    vmax = 320
     
-    im = ax.pcolormesh(x,y,c, cmap=colormap, vmin=vmin, vmax=vmax)
+    lcl = 268
+    
+    colormap = colortables.get_colortable('ir_rgbv')
+    
+    colormap = pyart.graph.cm.NWSRef_r
+    
+    colors1 = plt.cm.Greys(np.linspace(.7, 1, round((((205-vmin)/(vmax-vmin))*1000),4)))
+    colors2 = colormap(np.linspace(.1, 1, round((((253-205)/(vmax-vmin))*1000),4)))
+    colors3 = plt.cm.Greys(np.linspace(.2, .7, round((((lcl-253)/(vmax-vmin))*1000),4)))
+    colors4 = plt.cm.Greys(np.linspace(.8, .9, round((((vmax-lcl)/(vmax-vmin))*1000),4)))
+    colors = np.vstack((colors1, colors2, colors3, colors4))
+    mymap = mcolors.LinearSegmentedColormap.from_list('my_colormap', colors)
+    
+    
+    im = ax.pcolormesh(x,y,c, cmap=mymap, vmin=vmin, vmax=vmax, transform = proj)
     ax.add_feature(cfeature.STATES, linewidth=2, edgecolor='black')
     ax.coastlines(resolution = '10m', linewidth=1, edgecolor='black')
     ax.add_feature(cfeature.BORDERS, linewidth=1, edgecolor='black')
@@ -69,9 +88,11 @@ for i in range(1200,1501,1):
                         pad=.02)
     cbar.ax.set_yticklabels(str(cbar_ticks))
     
-    cbar_label = str(data.standard_name + '\n' + data.long_name)
+    cbar_label = str(data.units)
     
     cbar.set_label(cbar_label, rotation=0, labelpad=5, fontsize = 13)
+    
+    cbar.ax.invert_yaxis() 
     
     # Figure Text
     txt = open('channel_title.txt', "r")
@@ -85,7 +106,7 @@ for i in range(1200,1501,1):
     sd = datetime.strptime(time, fmt)
     savetime = sd.strftime('%Y%m%d%H%M%S')
     
-    dataset_name = nc.dataset_name[14:-61]
+    dataset_name = nc.dataset_name[15:17]
     sector = '***sector error***'
     
     if dataset_name == 'M1':
@@ -112,7 +133,9 @@ for i in range(1200,1501,1):
     plt.close()
     
     gc.collect()
+    
+    runtime = timer()
+    print("Current run time: %s min."%round((runtime - start)/60,2))
+    
 end = timer()
-print("Time: %s seconds"%round((end - start),2))
-
-exit()
+print("Total time: %s min."%round((end - start)/60,2))

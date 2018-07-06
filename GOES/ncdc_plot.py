@@ -63,7 +63,7 @@ colormap = colortables.get_colortable('ir_rgbv')
 colormap = pyart.graph.cm.NWSRef_r
 
 colors1 = plt.cm.Greys(np.linspace(.7, 1, ((205-vmin)/(vmax-vmin))*1000))
-colors2 = colormap(np.linspace(0, 1, ((253-205)/(vmax-vmin))*1000))
+colors2 = colormap(np.linspace(.1, 1, ((253-205)/(vmax-vmin))*1000))
 colors3 = plt.cm.Greys(np.linspace(.2, .7, ((lcl-253)/(vmax-vmin))*1000))
 colors4 = plt.cm.Greys(np.linspace(.8, .9, ((vmax-lcl)/(vmax-vmin))*1000))
 colors = np.vstack((colors1, colors2, colors3, colors4))
@@ -127,4 +127,4 @@ plt.close()
 
 gc.collect()
 end = timer()
-print("Time: %s seconds"%round((end - start),2))
+print("Time: %s min"%round((end - start)/60,2))

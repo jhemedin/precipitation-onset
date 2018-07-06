@@ -28,7 +28,8 @@ from matplotlib import animation
 import tempfile
 import numpy as np
 import pandas as pd
-import cartopy
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
 
 # Function for pulling all keys between two dates at a chosen nexrad site.
 def nexrad_site_datespan(start_date=None, start_date_time=None,
@@ -122,10 +123,10 @@ def datespan(start_date, end_date, delta=timedelta(days=1)):
 # Plotting and creating an animation using the radar datas.
 # Something close to home.
 # Use the option of saying 'now' to retrieve current UTC.
-my_data_keys = nexrad_site_datespan(start_date='20180524',
-                                         start_date_time='190600',
-                                         end_date='20180524',
-                                         end_date_time='234000',
+my_data_keys = nexrad_site_datespan(start_date='20180530',
+                                         start_date_time='000000',
+                                         end_date='20180530',
+                                         end_date_time='000400',
                                          site='kvnx')
 
 # Showing that the nexrad_site_datespan
@@ -150,9 +151,9 @@ for key in my_data_keys:
     
     
     #Plot Bounds
-    centerx = -97.53662
-    centery = 36.65189
-    zoom = 1.5
+    centerx = -97
+    centery = 38
+    zoom = .2
     
     xm = 25/18
     min_lon = centerx - (zoom*xm)
@@ -167,13 +168,14 @@ for key in my_data_keys:
     display = pyart.graph.RadarMapDisplayCartopy(radar)
     lat_0 = display.loc[0]
     lon_0 = display.loc[1]
-    proj = cartopy.crs.Mercator(
-                    central_longitude=lon_0,
+    proj = ccrs.Mercator(central_longitude=lon_0,
                     min_latitude=min_lat, max_latitude=max_lat)
     
     saveloc = '/home/scarani/Desktop/output/radar/'
     
     fig = plt.figure(figsize = [20,8])
+    ax = plt.subplot(projection = proj)
+    
     display.plot_ppi_map('reflectivity', sweep = sweep, projection=proj, resolution = '10m',
                          vmin = -8, vmax = 64, mask_outside = False,
                          cmap = pyart.graph.cm.NWSRef,
@@ -182,13 +184,23 @@ for key in my_data_keys:
                          lat_lines = lal, lon_lines = lol)
     gl = display.ax.gridlines(draw_labels=True,
                               linewidth=2, color='gray', alpha=0.5, linestyle='--')
+    
+    states = cfeature.NaturalEarthFeature(category='cultural',
+                                  name='admin_1_states_provinces_lines',
+                                  scale='10m', facecolor='none')
+    
+    ax.add_feature(states, linestyle='-', edgecolor='black',linewidth=2)
+    ax.plot(-98.128,36.741, color='black', marker= '*', transform = proj)
+#    ax.text(IF4_Billings_lon + 0.01, IF4_Billings_lat - 0., 'IF4-Billings', horizontalalignment='left')
+    
+    
     gl.xlabels_top = False
     gl.ylabels_right = False
     plt.title(sitename + ': Reflectivity (' + str(angle) + '°)' + '\n VCP: ' 
               + str(vcp) + '\n' + str(radar.time['units'].split()[2]))
     plt.savefig(saveloc + 'ref_' + radar.time['units'].split()[2] +'.png', 
                 bbox_inches = 'tight', dpi = 300)
-
+"""
     #Plot Correlation Coefficient
     fig = plt.figure(figsize = [20,8])
     display.plot_ppi_map('cross_correlation_ratio', sweep = sweep, projection=proj, resolution = '10m',
@@ -240,3 +252,4 @@ for key in my_data_keys:
               + str(vcp) + '\n' + str(radar.time['units'].split()[2]))
     plt.savefig(saveloc + 'v_' + radar.time['units'].split()[2] +'.png', 
                 bbox_inches = 'tight', dpi = 300)
+"""
