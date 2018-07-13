@@ -1,4 +1,4 @@
- import os
+import os
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
@@ -16,6 +16,10 @@ start = timer()
 filelist = sorted(os.listdir('/home/scarani/Desktop/data/goes/001/'))
 channel = 13
 
+def _nearest(array, value):
+    array = np.asarray(array)
+    idx = (np.abs(array - value)).argmin()
+    return idx
 
 
 for i in range(0,len(filelist)+1,1):
@@ -30,12 +34,20 @@ for i in range(0,len(filelist)+1,1):
     sat_height = nc.variables['goes_imager_projection'].perspective_point_height
 
 
-    x = nc.variables['x'][:].data * sat_height
-    y = nc.variables['y'][:].data * sat_height
-    c = nc.variables['CMI_C13'][:]
+    _x = nc.variables['x'] * sat_height
+    _y = nc.variables['y'] * sat_height
+    _c = nc.variables['CMI_C13'][:]
+    
+    lim = [_nearest(_x,-2304620.0),_nearest(_x,-1605218.0)
+            ,_nearest(_y,3687472.0),_nearest(_y,3346709.0)]
+    
+    x = _x[lim[0]:lim[1]]
+    y = _y[lim[2]:lim[3]]
+    c = _c[lim[2]:lim[3],lim[0]:lim[1]]
     data = nc.variables['CMI_C13']
     satvar = nc.variables.keys()
     time = nc['t']
+
     
     proj_var = nc.variables[data.grid_mapping]
     

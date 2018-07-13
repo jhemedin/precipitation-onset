@@ -13,8 +13,14 @@ import pyart
 
 start = timer()
 
+def _nearest(array, value):
+    array = np.asarray(array)
+    idx = (np.abs(array - value)).argmin()
+    return idx
+
+
 # Presets
-file = '/home/scarani/Desktop/data/goes/001/OR_ABI-L2-MCMIPM1-M3_G16_s20181732052338_e20181732052396_c20181732052469.nc'        
+file = '/home/scarani/Desktop/data/goes/001/OR_ABI-L2-MCMIPM1-M3_G16_s20181761156347_e20181761156404_c20181761156475.nc'        
 channel = 13
 
 filename = os.path.join(os.path.dirname(ccrs.__file__),'data', 'netcdf', file)
@@ -23,9 +29,16 @@ nc = netcdf_dataset(filename)
 sat_height = nc.variables['goes_imager_projection'].perspective_point_height
 
 
-x = nc.variables['x'][:].data * sat_height
-y = nc.variables['y'][:].data * sat_height
-c = nc.variables['CMI_C13'][:]
+_x = nc.variables['x'] * sat_height
+_y = nc.variables['y'] * sat_height
+_c = nc.variables['CMI_C13'][:]
+
+lim = [_nearest(_x,-2304620.0),_nearest(_x,-1605218.0)
+        ,_nearest(_y,3687472.0),_nearest(_y,3346709.0)]
+
+x = _x[lim[0]:lim[1]]
+y = _y[lim[2]:lim[3]]
+c = _c[lim[2]:lim[3],lim[0]:lim[1]]
 data = nc.variables['CMI_C13']
 satvar = nc.variables.keys()
 time = nc['t']
@@ -47,7 +60,6 @@ east = x.max()
 west = x.min()
 
 
-x, y = np.meshgrid(x, y)
 fig = plt.figure(figsize=(15, 15))
 ax = fig.add_subplot(1, 1, 1, projection=trans)
 #ax.set_xlim(west,east)
@@ -74,6 +86,8 @@ im = ax.pcolormesh(x,y,c, cmap=mymap, vmin=vmin, vmax=vmax, transform = proj)
 ax.add_feature(cfeature.STATES, linewidth=2, edgecolor='black')
 ax.coastlines(resolution = '10m', linewidth=1, edgecolor='black')
 ax.add_feature(cfeature.BORDERS, linewidth=1, edgecolor='black')
+#ax.set_xlim(-2665343.0, -1665338.4)
+#ax.set_ylim(3008030.2,4008034.8)
 
 
 cbar_ticks = np.arange(vmin,vmax, round(((abs(vmax)-abs(vmin))/6),2))
@@ -118,8 +132,8 @@ ax.set_title(orbital_slot + ': ' + sector + '\n' + ch + '\n' + str(time), fontsi
 
 savelocation = '/home/scarani/Desktop/output/goes/' + sector + '/'
 
-plt.savefig(savelocation + str(savetime) + '_' + str(sector) + '_' + 
-            str(channel) + '.png', bbox_inches = 'tight', dpi = 300)
+#plt.savefig(savelocation + str(savetime) + '_' + str(sector) + '_' + 
+#            str(channel) + '.png', bbox_inches = 'tight', dpi = 300)
 
 
 plt.show()
