@@ -18,9 +18,16 @@ def _nearest(array, value):
     idx = (np.abs(array - value)).argmin()
     return idx
 
+def _deg2m(lat, lon):
+    # convert decimal degrees to radians
+        # convert decimal degrees to radians
+    mlat = (40074275/360)*(lat-0)
+    mlon = (np.cos(lat)*(40074275/360))*(lon-75)
+    return mlat, mlon
+
 
 # Presets
-file = '/home/scarani/Desktop/data/goes/001/OR_ABI-L2-MCMIPM1-M3_G16_s20181761156347_e20181761156404_c20181761156475.nc'        
+file = '/home/scarani/Desktop/data/goes/001/OR_ABI-L2-MCMIPM1-M3_G16_s20181740013339_e20181740013396_c20181740013466.nc'        
 channel = 13
 
 filename = os.path.join(os.path.dirname(ccrs.__file__),'data', 'netcdf', file)
@@ -32,27 +39,29 @@ sat_height = nc.variables['goes_imager_projection'].perspective_point_height
 _x = nc.variables['x'] * sat_height
 _y = nc.variables['y'] * sat_height
 _c = nc.variables['CMI_C13'][:]
-
-lim = [_nearest(_x,-2304620.0),_nearest(_x,-1605218.0)
-        ,_nearest(_y,3687472.0),_nearest(_y,3346709.0)]
-
-x = _x[lim[0]:lim[1]]
-y = _y[lim[2]:lim[3]]
-c = _c[lim[2]:lim[3],lim[0]:lim[1]]
 data = nc.variables['CMI_C13']
-satvar = nc.variables.keys()
-time = nc['t']
 
 proj_var = nc.variables[data.grid_mapping]
 
 globe = ccrs.Globe(ellipse='sphere', semimajor_axis=proj_var.semi_major_axis,
                    semiminor_axis=proj_var.semi_minor_axis)
 
-proj = ccrs.Geostationary(central_longitude=-75,
-                          sweep_axis='x', satellite_height=sat_height, globe = globe)
+proj = ccrs.Geostationary(central_longitude=-75,sweep_axis='x',
+                          satellite_height=sat_height, globe = globe)
 
-trans = ccrs.Miller(central_longitude=-75)
+trans = ccrs.Miller(central_longitude=0)
 
+t_xy = trans.transform_points(proj, _x, _y)
+
+
+lim = [_nearest(t_xy[:,0],-100.75),_nearest(t_xy[:,0],-95.5)
+        ,_nearest(t_xy[:,1],38.822),_nearest(t_xy[:,1],34.66)]
+
+x = _x[lim[0]:lim[1]]
+y = _y[lim[2]:lim[3]]
+c = _c[lim[2]:lim[3],lim[0]:lim[1]]
+satvar = nc.variables.keys()
+time = nc['t']
 
 north = y.max()
 south = y.min()
@@ -74,19 +83,21 @@ colormap = colortables.get_colortable('ir_rgbv')
 
 colormap = pyart.graph.cm.NWSRef_r
 
-colors1 = plt.cm.Greys(np.linspace(.7, 1, ((205-vmin)/(vmax-vmin))*1000))
-colors2 = colormap(np.linspace(.1, 1, ((253-205)/(vmax-vmin))*1000))
-colors3 = plt.cm.Greys(np.linspace(.2, .7, ((lcl-253)/(vmax-vmin))*1000))
-colors4 = plt.cm.Greys(np.linspace(.8, .9, ((vmax-lcl)/(vmax-vmin))*1000))
+colors1 = plt.cm.Greys(np.linspace(.7, 1, int(((205-vmin)/(vmax-vmin))*1000)))
+colors2 = colormap(np.linspace(.1, 1, int(((253-205)/(vmax-vmin))*1000)))
+colors3 = plt.cm.Greys(np.linspace(.2, .7, int(((lcl-253)/(vmax-vmin))*1000)))
+colors4 = plt.cm.Greys(np.linspace(.8, .9, int(((vmax-lcl)/(vmax-vmin))*1000)))
 colors = np.vstack((colors1, colors2, colors3, colors4))
 mymap = mcolors.LinearSegmentedColormap.from_list('my_colormap', colors)
 
 
-im = ax.pcolormesh(x,y,c, cmap=mymap, vmin=vmin, vmax=vmax, transform = proj)
+im = ax.pcolormesh(x, y, c, cmap=mymap, vmin=vmin, vmax=vmax, transform = proj)
 ax.add_feature(cfeature.STATES, linewidth=2, edgecolor='black')
 ax.coastlines(resolution = '10m', linewidth=1, edgecolor='black')
 ax.add_feature(cfeature.BORDERS, linewidth=1, edgecolor='black')
-#ax.set_xlim(-2665343.0, -1665338.4)
+#radar_point = _deg2m(36.741,-98.128)
+ax.text(_x[_nearest(t_xy[:,0],-98.128)], _y[_nearest(t_xy[:,1],36.741)], 'KVNX', transform=proj, fontsize = 20)
+#ax.set_xlim(-2665343.0, -1665338.4
 #ax.set_ylim(3008030.2,4008034.8)
 
 

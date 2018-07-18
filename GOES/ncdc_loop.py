@@ -14,7 +14,7 @@ channel = 2
 
 
 
-for i in range(1200,1501,1):
+for i in range(0,1,1):
     
     print(i)
     
@@ -28,12 +28,12 @@ for i in range(1200,1501,1):
     
     x = nc.variables['x'][:].data * sat_height
     y = nc.variables['y'][:].data * sat_height
-    c = nc.variables['Rad'][:]
-    data = nc.variables['Rad']
+    c = nc.variables['CMI_C13'][:]
+    data = nc.variables['CMI_C13']
     satvar = nc.variables.keys()
     time = nc['t']
     
-    proj_var = nc.variables[nc.variables['Rad'].grid_mapping]
+    proj_var = nc.variables[data.grid_mapping]
     
     globe = ccrs.Globe(ellipse='sphere', semimajor_axis=proj_var.semi_major_axis,
                        semiminor_axis=proj_var.semi_minor_axis)
@@ -104,8 +104,8 @@ for i in range(1200,1501,1):
     
     savelocation = '/home/scarani/Desktop/output/goes/' + sector + '/'
     
-    plt.savefig(savelocation + str(savetime) + '_' + str(sector) + '_' + 
-                str(channel) + '.png', bbox_inches = 'tight', dpi = 300)
+#    plt.savefig(savelocation + str(savetime) + '_' + str(sector) + '_' + 
+#                str(channel) + '.png', bbox_inches = 'tight', dpi = 300)
     
     
     plt.show()
@@ -114,5 +114,3 @@ for i in range(1200,1501,1):
     gc.collect()
 end = timer()
 print("Time: %s seconds"%round((end - start),2))
-
-exit()

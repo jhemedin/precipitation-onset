@@ -7,11 +7,76 @@ import pyart
 from tint import Cell_tracks
 from tint.grid_utils import get_grid_size as ggs
 import gc
+from matplotlib import pyplot as plt
+import itertools
 
 start = timer()
 
-def get_grid():
-   
+def _nearest(array, value):
+    array = np.asarray(array)
+    idx = (np.abs(array - value)).argmin()
+    return idx
+
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6372800.  # Earth radius in kilometers
+
+    dLat = np.radians(lat2 - lat1)
+    dLon = np.radians(lon2 - lon1)
+    lat1 = np.radians(lat1)
+    lat2 = np.radians(lat2)
+
+    a = np.sin(dLat/2)**2 + np.cos(lat1)*np.cos(lat2)*np.sin(dLon/2)**2
+    c = 2*np.arcsin(np.sqrt(a))
+
+    return R * c
+
+
+def get_grid(filename):
+    nc = netcdf_dataset(filename)
+    
+    sat_height = nc.variables['goes_imager_projection'].perspective_point_height
+    radar_lon = -98.128
+    radar_lat = 36.741
+    
+    x = nc.variables['x'][:].data * sat_height
+    y = nc.variables['y'][:].data * sat_height
+    x_mesh, y_mesh = np.meshgrid(x, y)
+
+    a = nc.variables['CMI_C13'][:]
+    c = a[~np.isnan(x)]*(-1)
+    data = nc.variables['CMI_C13']
+    proj_var = nc.variables[data.grid_mapping]
+    
+    globe = ccrs.Globe(ellipse='sphere', semimajor_axis=proj_var.semi_major_axis,
+                       semiminor_axis=proj_var.semi_minor_axis)
+    
+    proj = ccrs.Geostationary(central_longitude=-75,sweep_axis='x',
+                              satellite_height=sat_height, globe = globe)
+    
+    trans = ccrs.Miller(central_longitude=0)
+    t_xy = trans.transform_points(proj, x_mesh, y_mesh)
+    x_meters = haversine(t_xy[:, :, 1], radar_lon, t_xy[:, :, 1], t_xy[:, :, 0])
+    y_meters = haversine(radar_lat, t_xy[:, :, 0], t_xy[:, :, 1], t_xy[:, :, 0])
+    plt.plot(x_meters[0, :])
+    plt.plot(y_meters[:, 0])
+#    xy_meters = [[haversine(radar_lat, radar_lon, lat, lon)
+#                  for lat, lon in zip(row[:, 1], row[:, 0])]
+#                 for row in ]
+#    print(t_xy[0, 0, :])
+    
+#    print(min(x), max(x))
+#    print(min(y), max(y))
+#    print(min(t_x), max(t_x))
+#    print(min(t_y), max(t_y))
+#    points = [(x, y) for x, y in itertools.product(t_x, t_y)]
+#    values = [c[x, y] for x, y in points]
+#    
+#    target_mesh = np.mgrid()
+    
+    
+#    print(t_xy.shape)
+    
+    
     _time = {'calendar': 'gregorian','data': np.array([ 0.934]),
             'long_name': 'Time of grid', 'standard_name': 'time',
             'units': str('seconds since ' + nc.time_coverage_end)}
@@ -45,7 +110,7 @@ def get_grid():
           'long_name': 'X distance on the projection plane from the origin', 
           'standard_name': 'projection_x_coordinate', 'units': 'm'}
     
-    _y = {'axis': 'Y', 'data': x, 
+    _y = {'axis': 'Y', 'data': y, 
           'long_name': 'Y distance on the projection plane from the origin', 
           'standard_name': 'projection_x_coordinate', 'units': 'm'}
     
@@ -61,87 +126,39 @@ def get_grid():
          origin_altitude=_origin_altitude, x=_x, y=_y, z=_z, projection=_projection,
          radar_longitude= _origin_longitude, radar_latitude=_origin_latitude, radar_altitude=_origin_altitude)
     return grid
-
+gc.collect()
+# %%
 # Presets
+def build_fn(data_dir, basename):
+    file = os.path.join(data_dir, basename)
+    return os.path.join(os.path.dirname(ccrs.__file__),'data', 'netcdf', file)   
+
 filelist = sorted(os.listdir('/home/scarani/Desktop/data/goes/001/'))
+data_dir = '/home/scarani/Desktop/data/goes/001/' 
+filenames = [build_fn(data_dir, bn) for bn in filelist[:5]]
+grid_gen = (get_grid(fn) for fn in filenames)
+
 channel = 13
-gridlist = []
-grids = []
-
-
-for i in filelist[0:20]:
-    
-    file = str('/home/scarani/Desktop/data/goes/001/' + i)   
-
-    filename = os.path.join(os.path.dirname(ccrs.__file__),'data', 'netcdf', file)
-    nc = netcdf_dataset(filename)
-    
-    sat_height = nc.variables['goes_imager_projection'].perspective_point_height
-    
-    
-    x = nc.variables['x'][:].data * sat_height
-    y = nc.variables['y'][:].data * sat_height
-    a = nc.variables['CMI_C13'][:]
-    c = a[~np.isnan(x)]
-    data = nc.variables['CMI_C13']
-    satvar = nc.variables.keys()
-    proj_var = nc.variables[data.grid_mapping]
-    
-    globe = ccrs.Globe(ellipse='sphere', semimajor_axis=proj_var.semi_major_axis,
-                       semiminor_axis=proj_var.semi_minor_axis)
-    
-    proj = ccrs.Geostationary(central_longitude=-75,sweep_axis='x',
-                              satellite_height=sat_height, globe = globe)
-    
-    
-    
-    grid = get_grid()
-    
-    gridlist.append(grid)
-    
-
-
-    
-#grid_gen = (pyart.io.read_grid(grid_name) for file_name in grid_files)
-
+# %%  
 # Instantiate tracks object and view parameter defaults
 tracks_obj = Cell_tracks(field='reflectivity')
-print(tracks_obj.params)
 
 # Adjust size parameter
-#tracks_obj.params['MIN_SIZE'] = 4
+tracks_obj.params['FIELD_THRESH'] = -273
+tracks_obj.params['FLOW_MARGIN'] = 10000
+tracks_obj.params['GS_ALT'] = 1500
+tracks_obj.params['ISO_SMOOTH'] = 3
+tracks_obj.params['ISO_THRESH'] = 8
+tracks_obj.params['MAX_DISPARITY'] = 999
+tracks_obj.params['MAX_FLOW_MAG'] = 50
+tracks_obj.params['MAX_SHIFT_DISP'] = 15
+tracks_obj.params['MIN_SIZE'] = 4
+tracks_obj.params['SEARCH_MARGIN'] = 4000
+
 
 # Get tracks from grid generator
-tracks_obj.get_tracks(iter(gridlist))
-
+print(tracks_obj.params)
+tracks_obj.get_tracks(grid_gen)
+# %%
 # Inspect tracks
 print(tracks_obj.tracks)
-
-
-
-#for i in range(0,500,1):
-#    for j in range(0,500,1):
-#        k = b[i][j]
-#        u = str(k)
-#        if k == 'nan':
-#            print('[' + str(i) + ']' + '[' + str(j) + ']' + '\n')
-        
-
-# Create generator of the same grids for animator
-#anim_gen = (pyart.io.read_grid(file_name) for file_name in grid_files)
-
-# Create animation in current working directory
-#animate(tracks_obj, anim_gen, 'tint_test_animation', alt=1500)
-        
-    
-
-        
-
-#xlist = x.tolist()
-#ylist = y.tolist()
-#loc = []
-#
-#for i in range(0,500,1):
-#    
-#    loc.append((xlist[i],ylist[i]))
-    

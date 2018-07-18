@@ -136,13 +136,15 @@ def get_grid(radar):
 my_data_keys = nexrad_site_datespan(start_date='20180530',
                                          start_date_time='000000',
                                          end_date='20180530',
-                                         end_date_time='000400',
+                                         end_date_time='003000',
                                          site='kvnx')
 
 # Showing that the nexrad_site_datespan
 # function correctly retrieved all keys between each date.
-print(my_data_keys)
 
+grids = []
+
+print(len(my_data_keys))
 
 for key in my_data_keys:
     localfile = tempfile.NamedTemporaryFile()
@@ -151,6 +153,10 @@ for key in my_data_keys:
     radar = pyart.io.read(localfile.name)
     
     grid = get_grid(radar)
+    
+    grids.append(grid)
+    
+    print(key)
     
     
 

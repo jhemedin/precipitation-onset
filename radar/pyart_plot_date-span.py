@@ -30,6 +30,7 @@ import numpy as np
 import pandas as pd
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+import gc
 
 # Function for pulling all keys between two dates at a chosen nexrad site.
 def nexrad_site_datespan(start_date=None, start_date_time=None,
@@ -123,10 +124,10 @@ def datespan(start_date, end_date, delta=timedelta(days=1)):
 # Plotting and creating an animation using the radar datas.
 # Something close to home.
 # Use the option of saying 'now' to retrieve current UTC.
-my_data_keys = nexrad_site_datespan(start_date='20180530',
-                                         start_date_time='000000',
-                                         end_date='20180530',
-                                         end_date_time='000400',
+my_data_keys = nexrad_site_datespan(start_date='20180624',
+                                         start_date_time='172000',
+                                         end_date='20180624',
+                                         end_date_time='173000',
                                          site='kvnx')
 
 # Showing that the nexrad_site_datespan
@@ -151,9 +152,9 @@ for key in my_data_keys:
     
     
     #Plot Bounds
-    centerx = -97
-    centery = 38
-    zoom = .2
+    centerx = -98.128
+    centery = 36.741
+    zoom = 1.5
     
     xm = 25/18
     min_lon = centerx - (zoom*xm)
@@ -200,6 +201,10 @@ for key in my_data_keys:
               + str(vcp) + '\n' + str(radar.time['units'].split()[2]))
     plt.savefig(saveloc + 'ref_' + radar.time['units'].split()[2] +'.png', 
                 bbox_inches = 'tight', dpi = 300)
+    
+    gc.collect()
+    
+    del grid, radar
 """
     #Plot Correlation Coefficient
     fig = plt.figure(figsize = [20,8])
