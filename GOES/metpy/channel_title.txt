@@ -1,0 +1,17 @@
+
+Ch.1: Blue Band 0.47 µm
+Ch.2: Red Band 0.64 µm
+Ch.3: Veggie Band 0.86 µm
+Ch.4: Cirrus Band 1.37 µm
+Ch.5: Snow/Ice Band 1.6 µm
+Ch.6: Cloud Particle Size Band 2.2 µm
+Ch.7: Shortwave Window Band 3.9 µm
+Ch.8: Upper-Level Tropo. WV Band 6.2 µm
+Ch.9: Mid-Level Tropo. WV Band 6.9 µm
+Ch.10: Low-Level WV Band 7.3 µm
+Ch.11: Cloud-Top Phase Band 8.4 µm
+Ch.12: Ozone Band 9.6 µm
+Ch.13: Clean IR Longwave Band 10.3 µm
+Ch.14: IR Longwave Band 11.2 µm
+Ch.15: Dirty Longwave Band 12.3 µm
+Ch.16: CO2 Longwave IR 13.3 µm

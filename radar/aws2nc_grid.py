@@ -82,12 +82,12 @@ def get_grid(radar):
 
 #%%
 # Parameters
-save_location = '/home/scarani/Desktop/data/radar/grids_nc/'
+save_location = '/home/scarani/Desktop/data/radar/grids_nc/20180524-25/'
 
-my_data_keys = nexrad_site_datespan(start_date='20180623',
-                                         start_date_time='002900',
-                                         end_date='20180625',
-                                         end_date_time='000000',
+my_data_keys = nexrad_site_datespan(start_date='20180524',
+                                         start_date_time='190000',
+                                         end_date='20180525',
+                                         end_date_time='010000',
                                          site='kvnx')
 
 
