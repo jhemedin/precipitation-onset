@@ -99,6 +99,5 @@ for i in range (-1,-(len(data)),-1):
     ds = xr.open_dataset(ds)
     
     sat_plot(ds)
-do(sat_plot(ds))
 
 
