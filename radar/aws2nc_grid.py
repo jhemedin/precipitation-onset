@@ -69,25 +69,36 @@ def datespan(start_date, end_date, delta=timedelta(days=1)):
     while current_date < end_date:
         yield current_date
         current_date += delta
+        
+dx = 200000
 
+#
+#def get_grid(radar):
+#    """ Returns grid object from radar object. """
+#    grid = pyart.map.grid_from_radars(
+#        radar, grid_shape=(31, 500, 500),
+#        grid_limits=((0, 15000), (-200000, 200000), (-200000, 200000)),
+#        fields=['reflectivity'], gridding_algo='map_gates_to_grid',
+#        h_factor=0., nb=0.6, bsp=1., min_radius=200.)
+#    return grid
 
 def get_grid(radar):
     """ Returns grid object from radar object. """
     grid = pyart.map.grid_from_radars(
         radar, grid_shape=(31, 500, 500),
-        grid_limits=((0, 15000), (-200000, 200000), (-200000, 200000)),
+        grid_limits=((0, 15000), (-dx, dx), (-dx, dx)),
         fields=['reflectivity'], gridding_algo='map_gates_to_grid',
         h_factor=0., nb=0.6, bsp=1., min_radius=200.)
     return grid
 
 #%%
 # Parameters
-save_location = '/home/scarani/Desktop/data/radar/grids_nc/20180524-25/'
+save_location = '/home/scarani/Desktop/data/tracking/radar_grids/test/'
 
-my_data_keys = nexrad_site_datespan(start_date='20180524',
-                                         start_date_time='190000',
-                                         end_date='20180525',
-                                         end_date_time='010000',
+my_data_keys = nexrad_site_datespan(start_date='20180623',
+                                         start_date_time='135000',
+                                         end_date='20180623',
+                                         end_date_time='180000',
                                          site='kvnx')
 
 

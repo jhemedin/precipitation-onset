@@ -12,20 +12,34 @@ start = timer()
 
 file = '/home/scarani/Desktop/data.nc'
 
+
+def _nearest(array, value):
+    array = np.asarray(array)
+    idx = (np.abs(array - value)).argmin()
+    return idx
+
 filename = os.path.join(os.path.dirname(ccrs.__file__),'data', 'netcdf', file)
 nc = netcdf_dataset(filename)
 
 sat_height = nc.variables['goes_imager_projection'].perspective_point_height
 
 
-x = nc.variables['x'][:].data * sat_height
-y = nc.variables['y'][:].data * sat_height
-c = nc.variables['CMI_C13'][:]
+_x = nc.variables['x'] * sat_height
+_y = nc.variables['y'] * sat_height
+_c = nc.variables['CMI_C13'][:]
+
+lim = [_nearest(_x,-2304620.0),_nearest(_x,-1605218.0)
+        ,_nearest(_y,3687472.0),_nearest(_y,3346709.0)]
+
+x = _x[lim[0]:lim[1]]
+y = _y[lim[2]:lim[3]]
+c = _c[lim[2]:lim[3],lim[0]:lim[1]]
 data = nc.variables['CMI_C13']
 satvar = nc.variables.keys()
 time = nc['t']
 
-proj_var = nc.variables[nc.variables['CMI_C13'].grid_mapping]
+
+proj_var = nc.variables[data.grid_mapping]
 
 globe = ccrs.Globe(ellipse='sphere', semimajor_axis=proj_var.semi_major_axis,
                    semiminor_axis=proj_var.semi_minor_axis)
@@ -33,18 +47,11 @@ globe = ccrs.Globe(ellipse='sphere', semimajor_axis=proj_var.semi_major_axis,
 proj = ccrs.Geostationary(central_longitude=-75,
                           sweep_axis='x', satellite_height=sat_height, globe = globe)
 
-
-north = y.max()
-south = y.min()
-east = x.max()
-west = x.min()
+trans = ccrs.Miller(central_longitude=-75)
 
 
-x, y = np.meshgrid(x, y)
 fig = plt.figure(figsize=(15, 15))
 ax = fig.add_subplot(1, 1, 1, projection=proj)
-ax.set_xlim(west,east)
-ax.set_ylim(south,north)
 
 vmin = 198
 vmax = 325

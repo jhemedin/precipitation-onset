@@ -38,6 +38,8 @@ for i in range(0,len(filelist)+1,1):
     _y = nc.variables['y'] * sat_height
     _c = nc.variables['CMI_C13'][:]
     
+    print(max(_x))
+    
     lim = [_nearest(_x,-2304620.0),_nearest(_x,-1605218.0)
             ,_nearest(_y,3687472.0),_nearest(_y,3346709.0)]
     
@@ -46,7 +48,6 @@ for i in range(0,len(filelist)+1,1):
     c = _c[lim[2]:lim[3],lim[0]:lim[1]]
     data = nc.variables['CMI_C13']
     satvar = nc.variables.keys()
-    time = nc['t']
 
     
     proj_var = nc.variables[data.grid_mapping]
@@ -58,19 +59,11 @@ for i in range(0,len(filelist)+1,1):
                               sweep_axis='x', satellite_height=sat_height, globe = globe)
     
     trans = ccrs.Miller(central_longitude=-75)
-    
-    
-    north = y.max()
-    south = y.min()
-    east = x.max()
-    west = x.min()
-    
+        
     
     x, y = np.meshgrid(x, y)
     fig = plt.figure(figsize=(15, 15))
     ax = fig.add_subplot(1, 1, 1, projection=trans)
-    #ax.set_xlim(west,east)
-    #ax.set_ylim(south,north)
     
     vmin = 198
     vmax = 320

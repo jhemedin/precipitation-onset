@@ -27,8 +27,8 @@ def deg2m(x,y):
 
 
 # Presets
-file = '/home/scarani/Desktop/data/goes/001/OR_ABI-L2-MCMIPM1-M3_G16_s20181732000338_e20181732000396_c20181732000472.nc'        
-#file = '/home/scarani/Desktop/data/goes/001/OR_ABI-L2-MCMIPM1-M3_G16_s20181751724344_e20181751724401_c20181751724471.nc'
+#file = '/home/scarani/Desktop/data/goes/001/OR_ABI-L2-MCMIPM1-M3_G16_s20181732000338_e20181732000396_c20181732000472.nc'        
+file = '/home/scarani/Desktop/data/goes/001/OR_ABI-L2-MCMIPM1-M3_G16_s20181751724344_e20181751724401_c20181751724471.nc'
 channel = 13
 
 filename = os.path.join(os.path.dirname(ccrs.__file__),'data', 'netcdf', file)
@@ -71,6 +71,7 @@ x = _x[lim[0]:lim[1]]
 y = _y[lim[2]:lim[3]]
 c = _c[lim[2]:lim[3],lim[0]:lim[1]]
 
+
 #x = _x
 #y = _y
 #c = _c
@@ -85,39 +86,44 @@ ax = fig.add_subplot(1, 1, 1, projection=trans)
 
 vmin = 198
 vmax = 320
-
 lcl = 269.5
 
 colormap = colortables.get_colortable('ir_rgbv')
 
 #colormap = pyart.graph.cm.NWSRef_r
 colormap = pyart.graph.cm_colorblind.HomeyerRainbow_r
-colors1 = plt.cm.Purples(np.linspace(.7, 1, int(((205-vmin)/(vmax-vmin))*1000)))
-colors2 = colormap(np.linspace(.1, 1, int(((253-205)/(vmax-vmin))*1000)))
-#colors2 = plt.cm.jet_r(np.linspace(.1, .9, int(((253-205)/(vmax-vmin))*1000)))
-colors3 = plt.cm.Greys(np.linspace(.1, .6, int(((lcl-253)/(vmax-vmin))*1000)))
-colors4 = plt.cm.Greys(np.linspace(.8, .85, int(((vmax-lcl)/(vmax-vmin))*1000)))
-colors = np.vstack((colors1, colors2, colors3, colors4))
+#colors1 = plt.cm.Purples(np.linspace(.7, 1, int(((205-vmin)/(vmax-vmin))*1000)))
+#colors2 = colormap(np.linspace(.2, 1, int(((253-205)/(vmax-vmin))*1000)))
+colors2 = colormap(np.linspace(0, 1, int(((253-vmin)/(vmax-vmin))*1000)))
+colors3 = plt.cm.Greys(np.linspace(.5, .7, int(((lcl-253)/(vmax-vmin))*1000)))
+colors4 = plt.cm.Greys(np.linspace(.8, .95, int(((vmax-lcl)/(vmax-vmin))*1000)))
+#colors4 = plt.cm.Greys_r(np.linspace(.2, .4, int(((vmax-lcl)/(vmax-vmin))*1000)))
+#colors = np.vstack((colors1, colors2, colors3, colors4))
+colors = np.vstack((colors2, colors3, colors4))
 mymap = mcolors.LinearSegmentedColormap.from_list('my_colormap', colors)
 
 
-im = ax.pcolormesh(x, y, c, cmap=plt.cm.Greys, vmin=vmin, vmax=vmax, transform = proj)
+im = ax.pcolormesh(x, y, c, cmap=mymap, vmin=vmin, vmax=vmax, transform = proj)
 ax.add_feature(cfeature.STATES, linewidth=2, edgecolor='black')
 ax.coastlines(resolution = '10m', linewidth=1, edgecolor='black')
 ax.add_feature(cfeature.BORDERS, linewidth=1, edgecolor='black')
 ax.add_feature(cfeature.LAKES, linewidth=20, edgecolor='black')
-#ax.text(_x[_nearest(t_xy[:,0],-98.0)], _y[_nearest(t_xy[:,1],36.741)], 'KVNX', transform=proj, fontsize = 20)
+
 kvnx = deg2m(-98.12799,36.741)
-ax.plot(kvnx[0], kvnx[1], transform=proj, color='blue', linewidth=1, marker='o')
+ax.plot(kvnx[0], kvnx[1], transform=proj, color='magenta', linewidth=1, marker='o')
+ax.text(kvnx[0]-30000, kvnx[1], 'KVNX', transform=proj, fontsize = 15, color='white')
 
 if4 = deg2m(-97.363834,36.578650)
-ax.plot(if4[0], if4[1], transform=proj, color='green', linewidth=1, marker='o')
+ax.plot(if4[0], if4[1], transform=proj, color='white', linewidth=1, marker='o')
+ax.text(if4[0]+5000, if4[1], 'IF4', transform=proj, fontsize = 15, color='white')
 
 if5 = deg2m(	-97.593936,	36.491178)
-ax.plot(if5[0], if5[1], transform=proj, color='green', linewidth=1, marker='o')
+ax.plot(if5[0], if5[1], transform=proj, color='white', linewidth=1, marker='o')
+ax.text(if5[0], if5[1]-10000, 'IF5', transform=proj, fontsize = 15, color='white')
 
 if6 = deg2m(	-97.547446,36.767569)
-ax.plot(if6[0], if6[1], transform=proj, color='green', linewidth=1, marker='o')
+ax.plot(if6[0], if6[1], transform=proj, color='white', linewidth=1, marker='o')
+ax.text(if6[0]+5000, if6[1]+5000, 'IF6', transform=proj, fontsize = 15, color='white')
 
 
 cbar_ticks = np.arange(vmin,vmax, round(((abs(vmax)-abs(vmin))/6),2))

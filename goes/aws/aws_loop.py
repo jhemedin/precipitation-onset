@@ -63,12 +63,12 @@ def plotsat():
     ax.set_xlim(west,east)
     ax.set_ylim(south,north)
     
-#    vmin = 190 #13
-#    vmax = 305 #13
-#    colormap = 'Greys' #13
-    vmin = 0.03 #02
-    vmax = 1.2 #02
-    colormap = 'Greys_r' #02
+    vmin = 190 #13
+    vmax = 305 #13
+    colormap = 'Greys' #13
+#    vmin = 0.03 #02
+#    vmax = 1.2 #02
+#    colormap = 'Greys_r' #02
     
 #    colormap = colortables.get_colortable('WVCIMSS')
     
