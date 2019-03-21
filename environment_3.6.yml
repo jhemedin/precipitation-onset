@@ -1,0 +1,25 @@
+name: precip_env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.6
+  - numpy
+  - numpy-base
+  - netCDF4
+  - basemap
+  - basemap-data-hires
+  - pandas
+  - boto3
+  - boto
+  - matplotlib
+  - metpy
+  - jupyter
+  - notebook
+  - pip:
+    - xarray
+    - scipy
+    - scikit-fuzzy
+    - cartopy
+    - git+https://github.com/openradar/TINT.git
+    - git+https://github.com/ARM-DOE/pyart.git
